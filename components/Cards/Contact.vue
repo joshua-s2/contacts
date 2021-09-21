@@ -1,57 +1,71 @@
 <template>
-  <div>
+  <div class="container">
     <div v-if="fetchStatus === API_STATE_ENUM.PENDING" class="my-4">
       <ProgrssBar />
     </div>
     <div v-if="fetchStatus === API_STATE_ENUM.RESOLVED">
-      <v-btn color="orange lighten-2" text @click="showModal">
-        Add user
-        <v-icon>
-          mdi-plus
-        </v-icon>
-      </v-btn>
+      <v-container>
+        <v-btn color="orange lighten-2 my-5 ml-xl-10" @click="showModal">
+          Add user
+          <v-icon>
+            mdi-plus
+          </v-icon>
+        </v-btn>
+        <v-row>
+          <v-col
+            v-for="items in record"
+            :key="items.id"
+            cols="12"
+            md="3"
+            sm="4"
+          >
+            <v-card class="mx-auto my-5" max-width="344">
+              <v-img :src="items.userImage" height="200px"></v-img>
 
-      <v-row>
-        <v-col v-for="items in record" :key="items.id" cols="12" sm="4">
-          <v-card class="mx-auto my-5" max-width="344">
-            <v-img :src="items.userImage" height="200px"></v-img>
+              <v-card-title>
+                {{ items.firstname }} {{ items.lastname }}
+              </v-card-title>
 
-            <v-card-title>
-              {{ items.firstname }} {{ items.lastname }}
-            </v-card-title>
+              <v-card-subtitle> Email: {{ items.email }} </v-card-subtitle>
 
-            <v-card-subtitle> Email: {{ items.email }} </v-card-subtitle>
-
-            <v-card-actions class="my-4">
-              <v-btn color="white lighten-2" text @click="updateUser(items)">
-                Edit
-              </v-btn>
-              <v-btn color="error lighten-2" text @click="deletUser(items.id)">
-                delete
-                <v-icon left>
-                  mdi-delete
-                </v-icon>
-              </v-btn>
-              <v-spacer></v-spacer>
-            </v-card-actions>
-          </v-card>
-          <v-dialog v-model="dialog" width="500">
-            <AddUserModal
-              @close="dialog = false"
-              @addUser="increaseUsers"
-              @updateUser="update"
-              :user="user"
-              :action="action"
-            />
-          </v-dialog>
-        </v-col>
-      </v-row>
+              <v-card-actions class="my-4">
+                <v-btn color="white lighten-2" text @click="updateUser(items)">
+                  Edit
+                </v-btn>
+                <v-btn color="error lighten-2" text @click="deleteModal">
+                  delete
+                  <v-icon left>
+                    mdi-delete
+                  </v-icon>
+                </v-btn>
+                <v-spacer></v-spacer>
+              </v-card-actions>
+            </v-card>
+            <v-dialog v-model="dialog" width="500">
+              <AddUserModal
+                @close="dialog = false"
+                @addUser="increaseUsers"
+                @updateUser="update"
+                :user="user"
+                :action="action"
+              />
+            </v-dialog>
+            <v-dialog v-model="confirmDelete" width="500">
+              <DeleteUser
+                @confrim="deleteUser(items.id)"
+                @close="confirmDelete = !confirmDelete"
+                @hide="confirmDelete = !confirmDelete"
+              />
+            </v-dialog>
+          </v-col> </v-row
+      ></v-container>
       <div class="text-center">
         <v-pagination
           v-model="page"
           @input="paginate"
           :length="length"
           circle
+          color="orange"
         ></v-pagination>
       </div>
     </div>
@@ -60,6 +74,7 @@
 <script>
 import AddUserModal from "../Modals/AddUser.vue";
 import ProgrssBar from "../Progress/index.vue";
+import DeleteUser from "../Modals/DeleteUser.vue";
 
 import { API_STATE_ENUM } from "/services/constant.js";
 export default {
@@ -70,6 +85,7 @@ export default {
     record: [],
     email: "",
     dialog: false,
+    confirmDelete: false,
     API_STATE_ENUM,
     action: "",
     user: {},
@@ -108,14 +124,18 @@ export default {
       this.action = "add";
       this.dialog = true;
     },
-    async deletUser(id) {
+    async deleteModal() {
+      this.confirmDelete = true;
+    },
+    async deleteUser(id) {
       try {
         this.deleteStatus = API_STATE_ENUM.PENDING;
         const axios = require("axios");
         const url = await axios.delete(`https://reqres.in/api/users/${id}`);
-        this.record = this.record.filter(items => {
+        const updated = this.record.filter(items => {
           return items.id !== id;
         });
+        this.record = updated;
         this.deleteStatus = API_STATE_ENUM.RESOLVED;
       } catch (error) {
         console.log(error.response);
@@ -144,7 +164,8 @@ export default {
   },
   components: {
     AddUserModal,
-    ProgrssBar
+    ProgrssBar,
+    DeleteUser
   }
 };
 </script>
